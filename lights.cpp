@@ -74,28 +74,22 @@ int main() {
 /**/
 
   //construct clauses
-  int numClauses = 0;
+  //numClauses = 2*numLights
   vector<pair < int, int > > test;
   for (int i = 0; i < numLights; i++){
     if (initialState[i] == 0){
       //light is off
-      //full clause is:            (x ^ y) v (!x ^ !y)
-      //full clause in 2-SAT form: (x v !x) ^ (y v !y) ^ (x v !y) ^ (!x v y)
-      test.push_back(make_pair(a[i], a[i] * (-1)));
-      test.push_back(make_pair(b[i], b[i] * (-1)));
+      //full clause is:            (x ∧ y) ∨ (-x ∧ -y)
+      //full clause in 2-SAT form: (x ∨ -y) ∧ (-x ∨ y)
       test.push_back(make_pair(a[i], b[i] * (-1)));
       test.push_back(make_pair(a[i] * (-1), b[i]));
-      numClauses += 4;
     } else {
       //light is on
-      //full clause is:           (x v y) ^ (-x v -y)
+      //full clause is:           (x ∨ y) ∧ (-x ∨ -y)
       test.push_back(make_pair(a[i], b[i]));
       test.push_back(make_pair(a[i] * (-1), b[i] * (-1)));
-      numClauses += 2;
     }
   }
-
-  //cout << "CLAUSES: " << numClauses << "\n"
 
   if(satisfiable(test) == 1){
     cout << "yes\n";
