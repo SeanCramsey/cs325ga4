@@ -1,12 +1,5 @@
 #include "./cnf2sat.hpp"
 
-#include <stdio.h>
-
-//#include <iostream>
-//#include <string>
-//#include <sstream>
-//#include <fstream>
-
 using namespace std;
 
 int main() {
@@ -38,7 +31,6 @@ int main() {
   numSwitches = atoi(word.c_str());
   getline(vars, word);
   numLights = atoi(word.c_str());
-  //cout << numSwitches << ", " << numLights << "\n";
   //get the initial states of all lights, the second line
   getline(iFile,line);
   stringstream state(line);
@@ -47,9 +39,8 @@ int main() {
     getline(state, word, ',');
     initialState[i] = atoi(word.c_str());
   }
-  cout << "\n";
   //get switches and connections
-  int switchID = 0;
+  int switchID = 1;
   a = new int[numLights];
   b = new int[numLights];
   c = new int[numLights];
@@ -64,48 +55,62 @@ int main() {
         a[lightID] = switchID;
         c[lightID]++;
       }
-      /*//DEBUG TEST, per step display
+      /*//DEBUG: per step display
       for (int i = 0; i < numLights; i++){
         cout << "STATE: " << initialState[i] << " CONNECTIONS: " << a[i] << "," << b[i] << "\n";;
       } cout << "\n"; /**/
     }
     switchID++;
   }
-  free(c);
+  delete [] c; //no longer need c array, de-allocate
 
-
-
-//DEBUG final display from input file
+/*//DEBUG: final display from input file
   //initial vars,
   cout <<"SWITCHES: "<< numSwitches << " LIGHTS: " << numLights << "\n";
   //show initial state of each light and its connections
   for (int i = 0; i < numLights; i++){
     cout << "STATE: " << initialState[i] << " CONNECTIONS: " << a[i] << "," << b[i] << "\n";;
   }
-//
+/**/
+
+  //construct clauses
+  int numClauses = 0;
+  vector<pair < int, int > > test;
+  for (int i = 0; i < numLights; i++){
+    if (initialState[i] == 0){
+      //light is off
+      //full clause is:            (x ^ y) v (!x ^ !y)
+      //full clause in 2-SAT form: (x v !x) ^ (y v !y) ^ (x v !y) ^ (!x v y)
+      test.push_back(make_pair(a[i], a[i] * (-1)));
+      test.push_back(make_pair(b[i], b[i] * (-1)));
+      test.push_back(make_pair(a[i], b[i] * (-1)));
+      test.push_back(make_pair(a[i] * (-1), b[i]));
+      numClauses += 4;
+    } else {
+      //light is on
+      //full clause is:           (x v y) ^ (-x v -y)
+      test.push_back(make_pair(a[i], b[i]));
+      test.push_back(make_pair(a[i] * (-1), b[i] * (-1)));
+      numClauses += 2;
+    }
+  }
+
+  //cout << "CLAUSES: " << numClauses << "\n"
+
+  if(satisfiable(test) == 1){
+    cout << "yes\n";
+    oFile << "yes";
+  } else {
+    cout << "no\n";
+    oFile << "no";
+  }
+  test.clear();
+
+  delete [] a;
+  delete [] b;
+  delete [] initialState;
 
   iFile.close();
   oFile.close();
-  /**/
   return 0;
 }
-/* tests from provided file
-  int numClauses = 2;
-  int a[] = {-2, 2};
-  int b[] = {-2, 2};
-  vector<pair<int, int> > test;
-  for(int i = 0; i < numClauses; i++) {
-      test.push_back(make_pair(a[i],b[i]));
-  }
-  cout << "Expected: 0\nActual: " << satisfiable(test) << endl;
-  test.clear();
-
-  numClauses = 7;
-  int c[] = {1, -2, -1, 3, -3, -4, -3};
-  int d[] = {2, 3, -2, 4, 5, -5, 4};
-
-  for(int i = 0; i < numClauses; i++) {
-      test.push_back(make_pair(c[i],d[i]));
-  }
-  cout << "\nExpected: 1\nActual: " << satisfiable(test) << endl;
-*/
